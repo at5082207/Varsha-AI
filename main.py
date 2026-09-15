@@ -1,6 +1,9 @@
 import os
 import base64
 import json
+from pathlib import Path
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,7 +15,7 @@ from openai import OpenAI
 # APP
 # =========================================================
 
-app = FastAPI(
+app = FastAPI( BASE_DIR = Path(__file__).resolve().parent
     title="VARSHA AI Cyclone Intelligence API",
     version="1.0.0"
 )
