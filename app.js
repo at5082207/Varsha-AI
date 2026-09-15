@@ -1,14 +1,13 @@
-const API_BASE = "https://varsha-ai-i8e4.onrender.com";
+const API_BASE = window.location.origin;
 
 let map = null;
-let mapLayers = [];
+let stormLayers = [];
 let aiLocationLayer = null;
 let selectedFile = null;
-let storms = [];
 
 
 /* =========================================================
-   BASIC HELPERS
+   HELPERS
 ========================================================= */
 
 function $(id) {
@@ -20,9 +19,30 @@ function safeNumber(value) {
     return Number.isFinite(n) ? n : null;
 }
 
+function showError(message) {
+    const box = $("analysisError");
+
+    if (!box) {
+        console.error(message);
+        return;
+    }
+
+    box.textContent = message;
+    box.classList.remove("hidden");
+}
+
+function clearError() {
+    const box = $("analysisError");
+
+    if (box) {
+        box.textContent = "";
+        box.classList.add("hidden");
+    }
+}
+
 
 /* =========================================================
-   DOM ELEMENTS
+   IMAGE UPLOAD
 ========================================================= */
 
 const imageInput = $("imageInput");
@@ -32,14 +52,21 @@ const changeBtn = $("changeBtn");
 const analyzeBtn = $("analyzeBtn");
 const analyzeBtnPreview = $("analyzeBtnPreview");
 
+if (chooseBtn) {
+    chooseBtn.addEventListener("click", () => {
+        imageInput.click();
+    });
+}
 
-/* =========================================================
-   IMAGE UPLOAD
-========================================================= */
+if (changeBtn) {
+    changeBtn.addEventListener("click", () => {
+        imageInput.click();
+    });
+}
 
 if (imageInput) {
-    imageInput.addEventListener("change", function (event) {
-        const file = event.target.files && event.target.files[0];
+    imageInput.addEventListener("change", (event) => {
+        const file = event.target.files?.[0];
 
         if (file) {
             setSelectedFile(file);
@@ -47,44 +74,24 @@ if (imageInput) {
     });
 }
 
-
-if (chooseBtn) {
-    chooseBtn.addEventListener("click", function () {
-        if (imageInput) {
-            imageInput.click();
-        }
-    });
-}
-
-
-if (changeBtn) {
-    changeBtn.addEventListener("click", function () {
-        if (imageInput) {
-            imageInput.click();
-        }
-    });
-}
-
-
 if (dropZone) {
 
-    dropZone.addEventListener("dragover", function (event) {
+    dropZone.addEventListener("dragover", (event) => {
         event.preventDefault();
         dropZone.classList.add("drag-over");
     });
 
-    dropZone.addEventListener("dragleave", function () {
+    dropZone.addEventListener("dragleave", () => {
         dropZone.classList.remove("drag-over");
     });
 
-    dropZone.addEventListener("drop", function (event) {
+    dropZone.addEventListener("drop", (event) => {
 
         event.preventDefault();
 
         dropZone.classList.remove("drag-over");
 
-        const file = event.dataTransfer.files &&
-                     event.dataTransfer.files[0];
+        const file = event.dataTransfer.files?.[0];
 
         if (file) {
             setSelectedFile(file);
@@ -93,46 +100,47 @@ if (dropZone) {
 }
 
 
-/* =========================================================
-   SELECT FILE
-========================================================= */
-
 function setSelectedFile(file) {
+
+    if (!file.type.startsWith("image/")) {
+        showError("Please select a PNG, JPG or JPEG image.");
+        return;
+    }
 
     selectedFile = file;
 
-    const previewImage = $("previewImage");
-    const fileName = $("fileName");
-    const uploadPanel = $("uploadPanel");
-    const previewPanel = $("previewPanel");
-    const errorBox = $("errorBox");
+    clearError();
 
-    if (errorBox) {
-        errorBox.textContent = "";
-        errorBox.classList.add("hidden");
-    }
+    const uploadEmpty = $("uploadEmpty");
+    const uploadPreview = $("uploadPreview");
+    const imagePreview = $("imagePreview");
+    const fileName = $("fileName");
+    const previewName = $("previewName");
 
     if (fileName) {
         fileName.textContent = file.name;
     }
 
-    if (previewImage) {
+    if (previewName) {
+        previewName.textContent = file.name;
+    }
 
+    if (imagePreview) {
         const url = URL.createObjectURL(file);
 
-        previewImage.src = url;
+        imagePreview.src = url;
 
-        previewImage.onload = function () {
+        imagePreview.onload = () => {
             URL.revokeObjectURL(url);
         };
     }
 
-    if (uploadPanel) {
-        uploadPanel.classList.add("hidden");
+    if (uploadEmpty) {
+        uploadEmpty.classList.add("hidden");
     }
 
-    if (previewPanel) {
-        previewPanel.classList.remove("hidden");
+    if (uploadPreview) {
+        uploadPreview.classList.remove("hidden");
     }
 
     if (analyzeBtn) {
@@ -143,12 +151,12 @@ function setSelectedFile(file) {
         analyzeBtnPreview.disabled = false;
     }
 
-    clearAIResult();
+    resetAI();
 }
 
 
 /* =========================================================
-   ANALYZE BUTTONS
+   AI ANALYSIS
 ========================================================= */
 
 if (analyzeBtn) {
@@ -160,10 +168,6 @@ if (analyzeBtnPreview) {
 }
 
 
-/* =========================================================
-   AI IMAGE ANALYSIS
-========================================================= */
-
 async function analyzeImage() {
 
     if (!selectedFile) {
@@ -171,11 +175,13 @@ async function analyzeImage() {
         return;
     }
 
+    clearError();
+
+    setAnalyzing(true);
+
     const formData = new FormData();
 
     formData.append("file", selectedFile);
-
-    setAnalyzingState(true);
 
     try {
 
@@ -189,7 +195,7 @@ async function analyzeImage() {
 
         if (!response.ok) {
 
-            let message = `Server error: ${response.status}`;
+            let message = `Backend error: ${response.status}`;
 
             try {
                 const errorData = await response.json();
@@ -204,7 +210,13 @@ async function analyzeImage() {
 
         const result = await response.json();
 
-        console.log("AI RESULT:", result);
+        console.log("VARSHA AI RESULT:", result);
+
+        if (!result.success) {
+            throw new Error(
+                result.error || "AI analysis failed."
+            );
+        }
 
         showAIResult(result);
 
@@ -221,47 +233,45 @@ async function analyzeImage() {
 
     } finally {
 
-        setAnalyzingState(false);
+        setAnalyzing(false);
     }
 }
 
 
-/* =========================================================
-   ANALYZING STATE
-========================================================= */
-
-function setAnalyzingState(isLoading) {
+function setAnalyzing(loading) {
 
     const buttons = [
         analyzeBtn,
         analyzeBtnPreview
     ];
 
-    buttons.forEach(function (button) {
+    buttons.forEach(button => {
 
-        if (!button) {
-            return;
-        }
+        if (!button) return;
 
-        button.disabled = isLoading;
+        button.disabled = loading;
 
-        if (isLoading) {
-            button.dataset.originalText = button.textContent;
-            button.textContent = "Analyzing...";
+        if (loading) {
+            button.textContent = "ANALYZING...";
         } else {
-            button.textContent =
-                button.dataset.originalText || "Analyze Cyclone";
+            button.textContent = "ANALYZE CYCLONE";
         }
     });
 
-    const loadingBox = $("loadingBox");
+    const aiBadge = $("aiBadge");
+    const aiWaiting = $("aiWaiting");
 
-    if (loadingBox) {
-        if (isLoading) {
-            loadingBox.classList.remove("hidden");
-        } else {
-            loadingBox.classList.add("hidden");
+    if (loading) {
+
+        if (aiBadge) {
+            aiBadge.textContent = "ANALYZING";
+            aiBadge.className = "badge neutral";
         }
+
+        if (aiWaiting) {
+            aiWaiting.classList.remove("hidden");
+        }
+
     }
 }
 
@@ -272,23 +282,26 @@ function setAnalyzingState(isLoading) {
 
 function showAIResult(result) {
 
-    console.log("Showing AI result:", result);
+    const aiWaiting = $("aiWaiting");
+    const aiResult = $("aiResult");
 
-    const resultPanel = $("resultPanel");
+    if (aiWaiting) {
+        aiWaiting.classList.add("hidden");
+    }
 
-    if (resultPanel) {
-        resultPanel.classList.remove("hidden");
+    if (aiResult) {
+        aiResult.classList.remove("hidden");
     }
 
 
     /* ---------- Probability ---------- */
 
-    let probability =
-        safeNumber(result.cyclone_probability);
+    let probability = safeNumber(
+        result.cyclone_probability
+    );
 
     if (probability === null) {
-        probability =
-            safeNumber(result.probability);
+        probability = safeNumber(result.probability);
     }
 
     if (probability === null) {
@@ -296,7 +309,7 @@ function showAIResult(result) {
     }
 
     if (probability <= 1) {
-        probability = probability * 100;
+        probability *= 100;
     }
 
     probability = Math.max(
@@ -305,199 +318,122 @@ function showAIResult(result) {
     );
 
     const probabilityText = $("probability");
-    const probabilityBar = $("probabilityBar");
+    const progressBar = $("progressBar");
 
     if (probabilityText) {
         probabilityText.textContent =
             probability.toFixed(1) + "%";
     }
 
-    if (probabilityBar) {
-        probabilityBar.style.width =
-            probability.toFixed(1) + "%";
+    if (progressBar) {
+        progressBar.style.width =
+            probability + "%";
     }
 
 
     /* ---------- Detection ---------- */
 
-    const detection =
-        String(
-            result.detection ||
-            result.classification ||
-            result.label ||
-            ""
-        ).toLowerCase();
-
-    let isCyclone = false;
-
-    if (
-        detection.includes("cyclone") ||
-        detection.includes("storm") ||
-        detection.includes("tropical")
-    ) {
-        isCyclone = true;
-    }
-
-    if (
-        result.is_cyclone === true ||
-        result.cyclone_detected === true
-    ) {
-        isCyclone = true;
-    }
+    const isCyclone =
+        result.cyclone_detected === true;
 
 
-    const detectionStatus =
-        $("detectionStatus");
+    const aiBadge = $("aiBadge");
+    const detectionBox = $("detectionBox");
+    const detectionDot = $("detectionDot");
+    const detectionText = $("detectionText");
+    const confidenceText = $("confidenceText");
 
-    if (detectionStatus) {
 
-        if (isCyclone) {
+    if (isCyclone) {
 
-            detectionStatus.textContent =
-                "CYCLONE DETECTED";
-
-            detectionStatus.classList.remove(
-                "text-green-400"
-            );
-
-            detectionStatus.classList.add(
-                "text-red-400"
-            );
-
-        } else {
-
-            detectionStatus.textContent =
-                "NO CYCLONE DETECTED";
-
-            detectionStatus.classList.remove(
-                "text-red-400"
-            );
-
-            detectionStatus.classList.add(
-                "text-green-400"
-            );
+        if (aiBadge) {
+            aiBadge.textContent = "CYCLONE DETECTED";
+            aiBadge.className = "badge danger";
         }
-    }
 
+        if (detectionText) {
+            detectionText.textContent =
+                "CYCLONE DETECTED";
+        }
 
-    /* ---------- Model ---------- */
+        if (detectionBox) {
+            detectionBox.classList.add("danger");
+        }
 
-    const modelName =
-        $("modelName");
+        if (detectionDot) {
+            detectionDot.classList.add("danger");
+        }
 
-    if (modelName) {
+    } else {
 
-        modelName.textContent =
-            result.model ||
-            result.model_name ||
-            "OpenAI Vision";
-    }
+        if (aiBadge) {
+            aiBadge.textContent = "NO CYCLONE";
+            aiBadge.className = "badge success";
+        }
 
-
-    /* ---------- Warning ---------- */
-
-    const warning =
-        $("warningText");
-
-    if (warning) {
-
-        warning.textContent =
-            result.warning ||
-            result.analysis ||
-            result.summary ||
-            "AI analysis completed.";
-    }
-
-
-    /* ---------- Summary ---------- */
-
-    const summary =
-        $("aiSummary");
-
-    if (summary) {
-
-        summary.textContent =
-            result.summary ||
-            result.analysis ||
-            "No additional summary available.";
+        if (detectionText) {
+            detectionText.textContent =
+                "NO CYCLONE DETECTED";
+        }
     }
 
 
     /* ---------- Confidence ---------- */
 
-    const confidence =
-        $("confidence");
+    if (confidenceText) {
 
-    if (confidence) {
+        const confidence =
+            safeNumber(result.confidence);
 
-        confidence.textContent =
-            result.confidence ||
-            "AI ESTIMATE";
+        confidenceText.textContent =
+            confidence !== null
+                ? `Confidence ${confidence}%`
+                : "AI confidence unavailable";
     }
 
 
-    /* ---------- Intensity ---------- */
+    /* ---------- Model ---------- */
 
-    const intensity =
-        $("intensity");
+    const modelName = $("modelName");
 
-    if (intensity) {
-
-        intensity.textContent =
-            result.intensity ||
-            result.storm_intensity ||
-            "Unknown";
+    if (modelName) {
+        modelName.textContent =
+            result.model || "OpenAI Vision";
     }
 
 
-    /* ---------- Movement ---------- */
+    /* ---------- Analysis ---------- */
 
-    const movement =
-        $("movement");
+    const modelWarning = $("modelWarning");
 
-    if (movement) {
+    if (modelWarning) {
 
-        movement.textContent =
-            result.movement ||
-            result.movement_direction ||
-            "Unknown";
+        const analysis =
+            result.analysis ||
+            "AI analysis completed.";
+
+        const evidence =
+            result.visual_evidence || "";
+
+        modelWarning.innerHTML =
+            `<strong>AI Assessment</strong><br>
+             ${escapeHTML(analysis)}
+             ${evidence
+                ? `<br><br><strong>Visual Evidence</strong><br>${escapeHTML(evidence)}`
+                : ""
+             }`;
     }
-
-
-    /* ---------- AI Reason ---------- */
-
-    const reason =
-        $("aiReason");
-
-    if (reason) {
-
-        reason.textContent =
-            result.reason ||
-            result.explanation ||
-            "AI visual assessment completed.";
-    }
-
-
-    /* ---------- Location ---------- */
-
-    updateAIImageLocation(result);
 }
 
 
 /* =========================================================
-   AI IMAGE LOCATION
+   AI LOCATION
 ========================================================= */
 
 function updateAIImageLocation(result) {
 
-    if (!map) {
-        console.warn("Map is not initialized.");
-        return;
-    }
+    if (!map) return;
 
-    /*
-        Remove previous AI marker
-    */
 
     if (aiLocationLayer) {
 
@@ -507,64 +443,14 @@ function updateAIImageLocation(result) {
     }
 
 
-    const locationAvailable =
+    const available =
         result.location_available === true;
 
 
-    const locationPanel =
-        $("aiLocationPanel");
-
-    const locationStatus =
-        $("aiLocationStatus");
-
-    const locationCoordinates =
-        $("aiLocationCoordinates");
-
-    const locationConfidence =
-        $("aiLocationConfidence");
-
-    const locationNote =
-        $("aiLocationNote");
-
-
-    /* =====================================================
-       NO LOCATION
-    ===================================================== */
-
-    if (!locationAvailable) {
-
-        if (locationStatus) {
-            locationStatus.textContent =
-                "LOCATION NOT AVAILABLE";
-        }
-
-        if (locationCoordinates) {
-            locationCoordinates.textContent =
-                "Coordinates unavailable";
-        }
-
-        if (locationConfidence) {
-            locationConfidence.textContent =
-                "N/A";
-        }
-
-        if (locationNote) {
-            locationNote.textContent =
-                result.location_note ||
-                "The satellite image does not contain enough visible geographic reference to estimate coordinates safely.";
-        }
-
-        if (locationPanel) {
-            locationPanel.classList.remove("hidden");
-        }
-
+    if (!available) {
         return;
     }
 
-
-    /* =====================================================
-       READ COORDINATES
-    ===================================================== */
 
     const latitude =
         safeNumber(result.latitude);
@@ -572,11 +458,6 @@ function updateAIImageLocation(result) {
     const longitude =
         safeNumber(result.longitude);
 
-
-    /*
-        Safety check:
-        Never put invalid coordinates on the map.
-    */
 
     if (
         latitude === null ||
@@ -586,89 +467,24 @@ function updateAIImageLocation(result) {
         longitude < -180 ||
         longitude > 180
     ) {
-
-        if (locationStatus) {
-            locationStatus.textContent =
-                "LOCATION NOT AVAILABLE";
-        }
-
-        if (locationCoordinates) {
-            locationCoordinates.textContent =
-                "Invalid coordinates returned by AI";
-        }
-
-        if (locationConfidence) {
-            locationConfidence.textContent =
-                "N/A";
-        }
-
-        if (locationNote) {
-            locationNote.textContent =
-                "AI did not return safe geographic coordinates.";
-        }
-
-        if (locationPanel) {
-            locationPanel.classList.remove("hidden");
-        }
-
         return;
     }
 
 
-    /* =====================================================
-       LOCATION PANEL
-    ===================================================== */
-
-    if (locationStatus) {
-        locationStatus.textContent =
-            "AI LOCATION ESTIMATE";
-    }
-
-    if (locationCoordinates) {
-
-        locationCoordinates.textContent =
-            `${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°`;
-    }
-
-    if (locationConfidence) {
-
-        locationConfidence.textContent =
-            String(
-                result.location_confidence ||
-                "LOW"
-            ).toUpperCase();
-    }
-
-    if (locationNote) {
-
-        locationNote.textContent =
-            result.location_note ||
-            "Approximate location inferred from visible geographic references in the image.";
-    }
-
-    if (locationPanel) {
-        locationPanel.classList.remove("hidden");
-    }
+    aiLocationLayer =
+        L.layerGroup().addTo(map);
 
 
-    /* =====================================================
-       CREATE AI MARKER
-    ===================================================== */
-
-    aiLocationLayer = L.layerGroup().addTo(map);
-
-
-    const outerCircle =
-        L.circle(
-            [latitude, longitude],
-            {
-                radius: 120000,
-                color: "#ff3344",
-                weight: 2,
-                fillColor: "#ff3344",
-                fillOpacity: 0.10
-            }
-        ).addTo(aiLocationLayer);
+    L.circle(
+        [latitude, longitude],
+        {
+            radius: 120000,
+            color: "#ff3344",
+            weight: 2,
+            fillColor: "#ff3344",
+            fillOpacity: 0.10
+        }
+    ).addTo(aiLocationLayer);
 
 
     const marker =
@@ -685,124 +501,36 @@ function updateAIImageLocation(result) {
 
 
     marker.bindPopup(`
-        <div style="min-width:220px">
-            <strong>VARSHA AI</strong><br>
-            AI Estimated Cyclone Location<br><br>
-            Latitude: ${latitude.toFixed(4)}°<br>
-            Longitude: ${longitude.toFixed(4)}°<br>
-            Confidence: ${
-                String(
-                    result.location_confidence || "LOW"
-                ).toUpperCase()
-            }
-        </div>
-    `);
-
-
-    marker.openPopup();
-
-
-    /* =====================================================
-       MOVE MAP
-    ===================================================== */
-
-    map.flyTo(
-        [latitude, longitude],
-        5,
-        {
-            duration: 1.5
+        <strong>VARSHA AI</strong><br><br>
+        AI Estimated Location<br>
+        Latitude: ${latitude.toFixed(4)}°<br>
+        Longitude: ${longitude.toFixed(4)}°<br>
+        Confidence: ${
+            result.location_confidence || "LOW"
         }
-    );
+    `);
 }
 
 
 /* =========================================================
-   ERROR
-========================================================= */
-
-function showError(message) {
-
-    const errorBox =
-        $("errorBox");
-
-    if (!errorBox) {
-        console.error(message);
-        return;
-    }
-
-    errorBox.textContent = message;
-
-    errorBox.classList.remove("hidden");
-}
-
-
-/* =========================================================
-   CLEAR AI RESULT
-========================================================= */
-
-function clearAIResult() {
-
-    const resultPanel =
-        $("resultPanel");
-
-    if (resultPanel) {
-        resultPanel.classList.add("hidden");
-    }
-
-
-    if (aiLocationLayer && map) {
-
-        map.removeLayer(aiLocationLayer);
-
-        aiLocationLayer = null;
-    }
-
-
-    const locationPanel =
-        $("aiLocationPanel");
-
-    if (locationPanel) {
-        locationPanel.classList.add("hidden");
-    }
-}
-
-
-/* =========================================================
-   MAP INITIALIZATION
+   MAP
 ========================================================= */
 
 function initializeMap() {
 
-    const mapElement =
-        $("map");
+    const mapElement = $("map");
 
-    if (!mapElement) {
-
-        console.warn(
-            "Map element #map not found."
-        );
-
-        return;
-    }
-
+    if (!mapElement) return;
 
     if (typeof L === "undefined") {
-
-        console.error(
-            "Leaflet is not loaded."
-        );
-
+        console.error("Leaflet not loaded.");
         return;
     }
 
-
-    map = L.map(
-        mapElement,
-        {
-            zoomControl: true,
-            worldCopyJump: true
-        }
-    ).setView(
+    map = L.map(mapElement, {
+        zoomControl: true,
+        worldCopyJump: true
+    }).setView(
         [15, 80],
         4
     );
@@ -816,9 +544,6 @@ function initializeMap() {
                 "&copy; OpenStreetMap contributors"
         }
     ).addTo(map);
-
-
-    console.log("Map initialized.");
 }
 
 
@@ -828,17 +553,28 @@ function initializeMap() {
 
 async function loadLiveCyclones() {
 
+    const mapMessage = $("mapMessage");
+
     try {
+
+        if (mapMessage) {
+            mapMessage.textContent =
+                "Loading live cyclone data...";
+        }
+
 
         const response =
             await fetch(
-                `${API_BASE}/live-cyclones`
+                `${API_BASE}/live-cyclones`,
+                {
+                    cache: "no-store"
+                }
             );
 
 
         if (!response.ok) {
             throw new Error(
-                `Live cyclone API returned ${response.status}`
+                `Live API error ${response.status}`
             );
         }
 
@@ -847,52 +583,189 @@ async function loadLiveCyclones() {
             await response.json();
 
 
-        storms =
-            Array.isArray(data)
-                ? data
-                : (
-                    Array.isArray(data.storms)
-                        ? data.storms
-                        : []
-                );
-
-
         console.log(
-            "Live cyclones:",
-            storms
+            "LIVE CYCLONE DATA:",
+            data
         );
 
 
-        drawAllStorms();
+        const stormList =
+            Array.isArray(data.storms)
+                ? data.storms
+                : [];
+
+
+        drawAllStorms(stormList);
+
+        updateCurrentStatus(
+            stormList,
+            data
+        );
+
+        updateForecast(
+            stormList
+        );
 
 
     } catch (error) {
 
         console.error(
-            "Live cyclone loading failed:",
+            "Live cyclone error:",
             error
         );
+
+        if (mapMessage) {
+            mapMessage.textContent =
+                "Live cyclone data unavailable.";
+        }
+
+        updateCurrentStatus([], {
+            source: "Live feed unavailable"
+        });
+
+        updateForecast([]);
     }
 }
 
 
 /* =========================================================
-   DRAW LIVE STORMS
+   CURRENT STATUS
 ========================================================= */
 
-function drawAllStorms() {
+function updateCurrentStatus(stormList, data) {
 
-    if (!map) {
+    const badge = $("stormBadge");
+    const name = $("stormName");
+    const status = $("stormStatus");
+    const wind = $("windSpeed");
+    const pressure = $("pressure");
+    const lat = $("latValue");
+    const lon = $("lonValue");
+    const source = $("dataSource");
+
+
+    if (!stormList.length) {
+
+        if (badge) {
+            badge.textContent = "NO ACTIVE CYCLONE";
+            badge.className = "badge neutral";
+        }
+
+        if (name) {
+            name.textContent = "NO ACTIVE STORM";
+        }
+
+        if (status) {
+            status.textContent =
+                "No active cyclone detected in the configured live feed.";
+        }
+
+        if (wind) wind.textContent = "--";
+        if (pressure) pressure.textContent = "--";
+        if (lat) lat.textContent = "--";
+        if (lon) lon.textContent = "--";
+
+        if (source) {
+            source.textContent =
+                data.source || "NOAA / NHC";
+        }
+
         return;
     }
 
 
-    /*
-        Remove previous storm layers
-        but keep AI marker.
-    */
+    const storm = stormList[0];
 
-    mapLayers.forEach(function (layer) {
+
+    if (badge) {
+
+        badge.textContent =
+            storm.classification ||
+            storm.category ||
+            "ACTIVE";
+
+        badge.className =
+            "badge danger";
+    }
+
+
+    if (name) {
+        name.textContent =
+            storm.name || "UNKNOWN STORM";
+    }
+
+
+    if (status) {
+
+        const movement =
+            storm.movement_direction ||
+            storm.movement_dir;
+
+        const speed =
+            storm.movement_speed_kt;
+
+        status.textContent =
+            movement !== undefined
+                ? `Moving ${movement}° at ${speed || "--"} kt`
+                : "Active tropical system";
+    }
+
+
+    if (wind) {
+
+        wind.textContent =
+            storm.wind_speed_kt !== undefined
+                ? `${storm.wind_speed_kt} kt`
+                : "--";
+    }
+
+
+    if (pressure) {
+
+        pressure.textContent =
+            storm.pressure_mbar !== undefined
+                ? `${storm.pressure_mbar} mb`
+                : "--";
+    }
+
+
+    if (lat) {
+
+        lat.textContent =
+            storm.latitude !== undefined
+                ? Number(storm.latitude).toFixed(2) + "°"
+                : "--";
+    }
+
+
+    if (lon) {
+
+        lon.textContent =
+            storm.longitude !== undefined
+                ? Number(storm.longitude).toFixed(2) + "°"
+                : "--";
+    }
+
+
+    if (source) {
+        source.textContent =
+            storm.source ||
+            data.source ||
+            "NOAA / NHC";
+    }
+}
+
+
+/* =========================================================
+   DRAW STORMS
+========================================================= */
+
+function drawAllStorms(stormList) {
+
+    if (!map) return;
+
+
+    stormLayers.forEach(layer => {
 
         try {
             map.removeLayer(layer);
@@ -900,202 +773,302 @@ function drawAllStorms() {
     });
 
 
-    mapLayers = [];
+    stormLayers = [];
 
 
-    if (!Array.isArray(storms)) {
-        return;
-    }
+    stormList.forEach(storm => {
 
-
-    storms.forEach(function (storm) {
-
-        try {
-
-            drawStorm(
-                storm
-            );
-
-        } catch (error) {
-
-            console.error(
-                "Storm drawing failed:",
-                error,
-                storm
-            );
-        }
+        drawStorm(storm);
     });
+
+
+    const mapMessage = $("mapMessage");
+
+    if (mapMessage) {
+
+        mapMessage.textContent =
+            stormList.length
+                ? `${stormList.length} active cyclone system(s) loaded.`
+                : "No active cyclone in the configured live feed.";
+    }
 }
 
 
-/* =========================================================
-   DRAW ONE STORM
-========================================================= */
-
 function drawStorm(storm) {
 
-    if (!storm || !map) {
-        return;
-    }
-
-
     const lat =
-        safeNumber(
-            storm.latitude ??
-            storm.lat
-        );
+        safeNumber(storm.latitude);
 
     const lon =
-        safeNumber(
-            storm.longitude ??
-            storm.lon ??
-            storm.lng
-        );
+        safeNumber(storm.longitude);
 
 
-    if (
-        lat === null ||
-        lon === null
-    ) {
+    if (lat === null || lon === null) {
         return;
     }
 
 
-    /*
-        Forecast track
-    */
-
-    const track =
-        storm.forecast_track ||
-        storm.forecast ||
-        storm.track;
-
-
-    if (
-        Array.isArray(track) &&
-        track.length > 1
-    ) {
-
-        const points =
-            track
-                .map(function (point) {
-
-                    const pLat =
-                        safeNumber(
-                            point.latitude ??
-                            point.lat
-                        );
-
-                    const pLon =
-                        safeNumber(
-                            point.longitude ??
-                            point.lon ??
-                            point.lng
-                        );
-
-                    if (
-                        pLat === null ||
-                        pLon === null
-                    ) {
-                        return null;
-                    }
-
-                    return [
-                        pLat,
-                        pLon
-                    ];
-                })
-                .filter(Boolean);
-
-
-        if (points.length > 1) {
-
-            const line =
-                L.polyline(
-                    points,
-                    {
-                        weight: 3,
-                        dashArray: "8 8",
-                        opacity: 0.75
-                    }
-                ).addTo(map);
-
-
-            mapLayers.push(line);
-        }
-    }
-
-
-    /*
-        Current storm marker
-    */
+    /* Current marker */
 
     const marker =
         L.circleMarker(
             [lat, lon],
             {
-                radius: 7,
-                weight: 2,
+                radius: 8,
                 color: "#ffffff",
-                fillOpacity: 0.95
+                weight: 2,
+                fillColor: "#ff3344",
+                fillOpacity: 1
             }
         ).addTo(map);
 
 
     const name =
-        storm.name ||
-        storm.storm_name ||
-        "Unknown Storm";
+        storm.name || "Unknown Storm";
 
-
-    const category =
+    const classification =
+        storm.classification ||
         storm.category ||
-        storm.status ||
-        "Tropical Cyclone";
+        "Tropical System";
 
 
     marker.bindPopup(`
-        <strong>${name}</strong><br>
-        ${category}<br><br>
+        <strong>${escapeHTML(name)}</strong><br>
+        ${escapeHTML(classification)}<br><br>
+        Wind: ${storm.wind_speed_kt || "--"} kt<br>
+        Pressure: ${storm.pressure_mbar || "--"} mb<br>
         Latitude: ${lat.toFixed(2)}°<br>
         Longitude: ${lon.toFixed(2)}°
     `);
 
 
-    mapLayers.push(marker);
+    stormLayers.push(marker);
+
+
+    /* Forecast */
+
+    const forecast =
+        Array.isArray(storm.forecast_track)
+            ? storm.forecast_track
+            : [];
+
+
+    const points = forecast
+        .map(point => {
+
+            const pLat =
+                safeNumber(
+                    point.latitude ??
+                    point.lat
+                );
+
+            const pLon =
+                safeNumber(
+                    point.longitude ??
+                    point.lon ??
+                    point.lng
+                );
+
+            if (
+                pLat === null ||
+                pLon === null
+            ) {
+                return null;
+            }
+
+            return [pLat, pLon];
+        })
+        .filter(Boolean);
+
+
+    if (points.length > 1) {
+
+        const line =
+            L.polyline(
+                [[lat, lon], ...points],
+                {
+                    weight: 3,
+                    dashArray: "8 8",
+                    opacity: 0.8
+                }
+            ).addTo(map);
+
+        stormLayers.push(line);
+    }
 }
 
 
 /* =========================================================
-   AUTO REFRESH
+   FORECAST LIST
 ========================================================= */
 
-function startLiveRefresh() {
+function updateForecast(stormList) {
 
-    setInterval(
-        loadLiveCyclones,
-        5 * 60 * 1000
+    const list = $("forecastList");
+
+    if (!list) return;
+
+
+    list.innerHTML = "";
+
+
+    if (!stormList.length) {
+
+        list.innerHTML =
+            `<div class="empty-state">
+                No active cyclone forecast available.
+             </div>`;
+
+        return;
+    }
+
+
+    let hasForecast = false;
+
+
+    stormList.forEach(storm => {
+
+        const forecast =
+            Array.isArray(storm.forecast_track)
+                ? storm.forecast_track
+                : [];
+
+
+        forecast.forEach((point, index) => {
+
+            const lat =
+                safeNumber(point.latitude);
+
+            const lon =
+                safeNumber(point.longitude);
+
+
+            if (
+                lat === null ||
+                lon === null
+            ) {
+                return;
+            }
+
+
+            hasForecast = true;
+
+
+            const item =
+                document.createElement("div");
+
+            item.className =
+                "forecast-item";
+
+
+            item.innerHTML = `
+                <div>
+                    <strong>
+                        ${escapeHTML(storm.name || "Storm")}
+                    </strong>
+                    <span>
+                        Forecast Point ${index + 1}
+                    </span>
+                </div>
+
+                <strong>
+                    ${lat.toFixed(2)}°,
+                    ${lon.toFixed(2)}°
+                </strong>
+            `;
+
+
+            list.appendChild(item);
+        });
+    });
+
+
+    if (!hasForecast) {
+
+        list.innerHTML =
+            `<div class="empty-state">
+                Forecast track not available from the live source.
+             </div>`;
+    }
+}
+
+
+/* =========================================================
+   RESET
+========================================================= */
+
+function resetAI() {
+
+    const aiWaiting = $("aiWaiting");
+    const aiResult = $("aiResult");
+    const aiBadge = $("aiBadge");
+
+    if (aiWaiting) {
+        aiWaiting.classList.remove("hidden");
+    }
+
+    if (aiResult) {
+        aiResult.classList.add("hidden");
+    }
+
+    if (aiBadge) {
+        aiBadge.textContent = "WAITING";
+        aiBadge.className = "badge neutral";
+    }
+}
+
+
+/* =========================================================
+   SECURITY
+========================================================= */
+
+function escapeHTML(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+/* =========================================================
+   REFRESH
+========================================================= */
+
+const refreshButton =
+    $("refreshMapBtn");
+
+if (refreshButton) {
+
+    refreshButton.addEventListener(
+        "click",
+        loadLiveCyclones
     );
 }
 
 
 /* =========================================================
-   PAGE LOAD
+   START
 ========================================================= */
 
 document.addEventListener(
     "DOMContentLoaded",
-    function () {
+    () => {
 
         console.log(
-            "VARSHA AI frontend loaded."
+            "VARSHA AI frontend connected to:",
+            API_BASE
         );
-
 
         initializeMap();
 
         loadLiveCyclones();
 
-        startLiveRefresh();
+        setInterval(
+            loadLiveCyclones,
+            5 * 60 * 1000
+        );
     }
 );
