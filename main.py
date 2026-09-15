@@ -1,3 +1,9 @@
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI(
+    title="VARSHA AI Cyclone Intelligence API"
+)
 async def image_to_data_url(file: UploadFile):
 
     contents = await file.read()
