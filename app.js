@@ -1,4 +1,4 @@
-const API_BASE = "http://127.0.0.1:8000";
+const API_BASE = "https://varsha-ai-i8e4.onrender.com";
 
 let map = null;
 let mapLayers = [];
