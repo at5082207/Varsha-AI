@@ -2,20 +2,27 @@ import os
 import base64
 import json
 from pathlib import Path
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from openai import OpenAI
+
+
+# =========================================================
+# PATH
+# =========================================================
+
+BASE_DIR = Path(__file__).resolve().parent
 
 
 # =========================================================
 # APP
 # =========================================================
 
-app = FastAPI( BASE_DIR = Path(__file__).resolve().parent
+app = FastAPI(
     title="VARSHA AI Cyclone Intelligence API",
     version="1.0.0"
 )
@@ -88,6 +95,11 @@ async def image_to_data_url(file: UploadFile):
 @app.get("/")
 async def root():
 
+    index_file = BASE_DIR / "index.html"
+
+    if index_file.exists():
+        return FileResponse(index_file)
+
     return {
         "name": "VARSHA AI Cyclone Intelligence API",
         "status": "online",
@@ -125,16 +137,20 @@ async def detect_cyclone(
             detail="OPENAI_API_KEY is not configured on the server."
         )
 
-    # Convert uploaded image to data URL
+    # -----------------------------------------------------
+    # IMAGE
+    # -----------------------------------------------------
+
     image_data_url = await image_to_data_url(file)
 
-    # =====================================================
-    # OPENAI VISION PROMPT
-    # =====================================================
+
+    # -----------------------------------------------------
+    # AI PROMPT
+    # -----------------------------------------------------
 
     prompt = """
-You are the AI vision engine of VARSHA AI, a cyclone intelligence
-prototype.
+You are the AI vision engine of VARSHA AI,
+a cyclone intelligence prototype.
 
 Analyze the uploaded satellite/weather image carefully.
 
@@ -150,6 +166,7 @@ Your tasks:
 4. Look for geographic clues visible INSIDE the image.
 
 Possible clues include:
+
 - country outlines
 - coastlines
 - islands
@@ -160,16 +177,19 @@ Possible clues include:
 - ocean/sea names
 - recognizable geographic features
 
-5. If enough geographic evidence is visible, provide an APPROXIMATE
-   latitude and longitude.
+5. If enough geographic evidence is visible, provide an
+   APPROXIMATE latitude and longitude.
 
 6. NEVER invent coordinates when there is insufficient evidence.
 
 7. Clearly distinguish between:
+
    - image-based geographic estimate
    - confirmed geographic information
 
-Return ONLY valid JSON using this structure:
+Return ONLY valid JSON.
+
+Use exactly this structure:
 
 {
     "cyclone_detected": true,
@@ -184,18 +204,21 @@ Return ONLY valid JSON using this structure:
     "visual_evidence": ""
 }
 
-Important:
+Important rules:
 
 - cyclone_probability must be between 0 and 100.
 - confidence must be between 0 and 100.
 - location_confidence must be between 0 and 100.
 - latitude must be between -90 and 90.
 - longitude must be between -180 and 180.
-- If location cannot be estimated reliably, use:
-  "location_available": false
-  "latitude": null
-  "longitude": null
-- Do not fabricate geographic coordinates.
+
+If location cannot be estimated reliably:
+
+"location_available": false
+"latitude": null
+"longitude": null
+
+Do not fabricate geographic coordinates.
 """
 
 
@@ -206,9 +229,7 @@ Important:
     try:
 
         response = client.responses.create(
-
             model=OPENAI_MODEL,
-
             input=[
                 {
                     "role": "user",
@@ -240,11 +261,13 @@ Important:
 
     result_text = response.output_text.strip()
 
-    # Remove markdown JSON fences if model adds them
+
+    # Remove markdown code fences
+
     if result_text.startswith("```json"):
         result_text = result_text[7:]
 
-    if result_text.startswith("```"):
+    elif result_text.startswith("```"):
         result_text = result_text[3:]
 
     if result_text.endswith("```"):
@@ -293,6 +316,7 @@ Important:
     )
 
     latitude = result.get("latitude")
+
     longitude = result.get("longitude")
 
     location_confidence = float(
@@ -316,7 +340,7 @@ Important:
 
 
     # =====================================================
-    # VALIDATE NUMBERS
+    # VALIDATE PROBABILITIES
     # =====================================================
 
     cyclone_probability = max(
@@ -360,12 +384,14 @@ Important:
         if latitude is not None:
 
             if latitude < -90 or latitude > 90:
+
                 latitude = None
                 location_available = False
 
         if longitude is not None:
 
             if longitude < -180 or longitude > 180:
+
                 longitude = None
                 location_available = False
 
@@ -425,3 +451,32 @@ async def live_cyclones():
         "storms": [],
         "source": "No live cyclone feed configured yet"
     }
+
+
+# =========================================================
+# FRONTEND STATIC FILES
+# =========================================================
+#
+# IMPORTANT:
+# index.html, app.js and style.css
+# should be in the SAME folder as this main.py.
+#
+# Current GitHub structure:
+#
+# Varsha-AI/
+# ├── main.py
+# ├── index.html
+# ├── app.js
+# ├── style.css
+# └── requirements.txt
+#
+# =========================================================
+
+app.mount(
+    "/",
+    StaticFiles(
+        directory=BASE_DIR,
+        html=True
+    ),
+    name="frontend"
+)
