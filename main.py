@@ -448,37 +448,8 @@ async def live_cyclones():
 
     return {
         "success": True,
-        "storms": [
-            {
-                "name": "VARSHA DEMO CYCLONE",
-                "status": "Cyclonic Storm",
-                "wind_speed": 85,
-                "pressure": 988,
-                "latitude": 16.42,
-                "longitude": 82.18,
-                "movement": "NW",
-                "source": "VARSHA AI DEMO",
-                "updated_at": "Live Demo",
-                "track": [
-                    {
-                        "latitude": 16.42,
-                        "longitude": 82.18,
-                        "type": "current"
-                    },
-                    {
-                        "latitude": 17.10,
-                        "longitude": 81.60,
-                        "type": "forecast"
-                    },
-                    {
-                        "latitude": 18.00,
-                        "longitude": 81.00,
-                        "type": "forecast"
-                    }
-                ]
-            }
-        ],
-        "source": "VARSHA AI DEMO FEED"
+        "storms": [],
+        "source": "No live cyclone feed configured yet"
     }
 
 
