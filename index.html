@@ -3,92 +3,199 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Varsha AI | Cyclone Intelligence</title>
 
+    <!-- Leaflet Map -->
     <link
         rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        crossorigin=""
     >
 
+    <!-- Main CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
+
 <div class="app-shell">
 
+    <!-- ================= HEADER ================= -->
+
     <header class="topbar">
+
         <div class="brand">
+
             <div class="brand-mark">V</div>
+
             <div>
-                <div class="brand-name">VARSHA <span>AI</span></div>
-                <div class="brand-sub">CYCLONE INTELLIGENCE SYSTEM</div>
+                <div class="brand-name">
+                    VARSHA <span>AI</span>
+                </div>
+
+                <div class="brand-sub">
+                    CYCLONE INTELLIGENCE SYSTEM
+                </div>
             </div>
+
         </div>
 
         <div class="system-online">
             <span class="online-dot"></span>
             SYSTEM ONLINE
         </div>
+
     </header>
+
 
     <main class="container">
 
-        <section class="hero">
-            <div class="eyebrow">AI WEATHER INTELLIGENCE</div>
-            <h1>Cyclone Intelligence Dashboard</h1>
-            <p>
-                Satellite image analysis, live cyclone tracking and
-                risk assessment.
-            </p>
-        </section>
+        <!-- ================= HERO ================= -->
 
-        <!-- IMAGE ANALYSIS -->
-        <section class="card upload-card">
-            <div class="section-title">
-                <div>
-                    <div class="eyebrow">01 · SATELLITE IMAGE ANALYSIS</div>
-                    <h2>Analyze a Cyclone Image</h2>
-                </div>
-                <div class="source-pill">TENSORFLOW</div>
+        <section class="hero">
+
+            <div class="eyebrow">
+                AI WEATHER INTELLIGENCE
             </div>
 
+            <h1>
+                Cyclone Intelligence Dashboard
+            </h1>
+
+            <p>
+                Satellite image analysis, cyclone tracking and
+                risk intelligence.
+            </p>
+
+        </section>
+
+
+        <!-- ================= IMAGE ANALYSIS ================= -->
+
+        <section class="card upload-card">
+
+            <div class="section-title">
+
+                <div>
+
+                    <div class="eyebrow">
+                        01 · SATELLITE IMAGE ANALYSIS
+                    </div>
+
+                    <h2>
+                        Analyze a Cyclone Image
+                    </h2>
+
+                </div>
+
+                <div class="source-pill">
+                    AI VISION
+                </div>
+
+            </div>
+
+
             <div id="dropZone" class="drop-zone">
+
+                <!-- EMPTY STATE -->
+
                 <div id="uploadEmpty" class="upload-empty">
-                    <div class="satellite-icon">🛰️</div>
-                    <h3>Select a satellite or cyclone image</h3>
-                    <p>PNG, JPG or JPEG</p>
+
+                    <div class="satellite-icon">
+                        🛰️
+                    </div>
+
+                    <h3>
+                        Select a satellite or cyclone image
+                    </h3>
+
+                    <p>
+                        PNG, JPG or JPEG
+                    </p>
+
 
                     <div class="button-row">
-                        <button id="chooseBtn" class="btn secondary" type="button">
+
+                        <button
+                            id="chooseBtn"
+                            class="btn secondary"
+                            type="button"
+                        >
                             CHOOSE IMAGE
                         </button>
 
-                        <button id="analyzeBtn" class="btn primary" type="button" disabled>
+
+                        <button
+                            id="analyzeBtn"
+                            class="btn primary"
+                            type="button"
+                            disabled
+                        >
                             ANALYZE CYCLONE
                         </button>
+
                     </div>
 
-                    <div id="fileName" class="file-name">No image selected</div>
+
+                    <div id="fileName" class="file-name">
+                        No image selected
+                    </div>
+
                 </div>
 
-                <div id="uploadPreview" class="upload-preview hidden">
-                    <img id="imagePreview" alt="Selected satellite image">
+
+                <!-- IMAGE PREVIEW -->
+
+                <div
+                    id="uploadPreview"
+                    class="upload-preview hidden"
+                >
+
+                    <img
+                        id="imagePreview"
+                        alt="Selected satellite image"
+                    >
+
 
                     <div class="preview-info">
-                        <div class="eyebrow">SELECTED IMAGE</div>
-                        <strong id="previewName">image.jpg</strong>
+
+                        <div class="eyebrow">
+                            SELECTED IMAGE
+                        </div>
+
+                        <strong id="previewName">
+                            image.jpg
+                        </strong>
+
 
                         <div class="button-row">
-                            <button id="changeBtn" class="btn secondary" type="button">
+
+                            <button
+                                id="changeBtn"
+                                class="btn secondary"
+                                type="button"
+                            >
                                 CHANGE IMAGE
                             </button>
 
-                            <button id="analyzeBtnPreview" class="btn primary" type="button">
+
+                            <button
+                                id="analyzeBtnPreview"
+                                class="btn primary"
+                                type="button"
+                            >
                                 ANALYZE CYCLONE
                             </button>
+
                         </div>
+
                     </div>
+
                 </div>
+
+
+                <!-- HIDDEN FILE INPUT -->
 
                 <input
                     id="imageInput"
@@ -96,27 +203,64 @@
                     accept="image/png,image/jpeg,image/jpg"
                     hidden
                 >
+
             </div>
 
-            <div id="analysisError" class="error-banner hidden"></div>
+
+            <!-- ERROR -->
+
+            <div
+                id="analysisError"
+                class="error-banner hidden"
+            ></div>
+
         </section>
 
-        <!-- MAIN GRID -->
+
+
+        <!-- ================= MAIN DASHBOARD ================= -->
+
         <section class="dashboard-grid">
 
+
             <!-- CURRENT STATUS -->
+
             <article class="card status-card">
+
                 <div class="card-title-row">
-                    <div class="eyebrow">02 · CURRENT STATUS</div>
-                    <div id="stormBadge" class="badge neutral">NO DATA</div>
+
+                    <div class="eyebrow">
+                        02 · CURRENT STATUS
+                    </div>
+
+                    <div
+                        id="stormBadge"
+                        class="badge neutral"
+                    >
+                        NO DATA
+                    </div>
+
                 </div>
 
-                <div id="stormName" class="storm-name">VARSHA</div>
-                <div id="stormStatus" class="storm-status">
-                    Waiting for live cyclone data
+
+                <div
+                    id="stormName"
+                    class="storm-name"
+                >
+                    VARSHA
                 </div>
+
+
+                <div
+                    id="stormStatus"
+                    class="storm-status"
+                >
+                    Waiting for cyclone data
+                </div>
+
 
                 <div class="stats-grid">
+
                     <div class="stat">
                         <span>WIND SPEED</span>
                         <strong id="windSpeed">--</strong>
@@ -136,130 +280,338 @@
                         <span>LONGITUDE</span>
                         <strong id="lonValue">--</strong>
                     </div>
+
                 </div>
+
 
                 <div class="status-footer">
+
                     <span>SOURCE</span>
-                    <strong id="dataSource">Waiting...</strong>
+
+                    <strong id="dataSource">
+                        Waiting...
+                    </strong>
+
                 </div>
+
             </article>
 
-            <!-- MAP -->
+
+
+            <!-- ================= MAP ================= -->
+
             <article class="card map-card">
+
                 <div class="card-title-row">
+
                     <div>
-                        <div class="eyebrow">03 · LIVE CYCLONE TRACK</div>
-                        <h2>Live Map</h2>
+
+                        <div class="eyebrow">
+                            03 · LIVE CYCLONE TRACK
+                        </div>
+
+                        <h2>
+                            Live Map
+                        </h2>
+
                     </div>
 
-                    <button id="refreshMapBtn" class="mini-btn" type="button">
+
+                    <button
+                        id="refreshMapBtn"
+                        class="mini-btn"
+                        type="button"
+                    >
                         ↻ REFRESH
                     </button>
+
                 </div>
+
 
                 <div id="map"></div>
 
-                <div id="mapMessage" class="map-message">
+
+                <div
+                    id="mapMessage"
+                    class="map-message"
+                >
                     Loading cyclone data...
                 </div>
 
+
                 <div class="legend">
-                    <span><i class="legend-current"></i> CURRENT</span>
-                    <span><i class="legend-forecast"></i> FORECAST</span>
-                    <span><i class="legend-track"></i> TRACK</span>
+
+                    <span>
+                        <i class="legend-current"></i>
+                        CURRENT
+                    </span>
+
+                    <span>
+                        <i class="legend-forecast"></i>
+                        FORECAST
+                    </span>
+
+                    <span>
+                        <i class="legend-track"></i>
+                        TRACK
+                    </span>
+
                 </div>
+
             </article>
 
-            <!-- AI RESULT -->
+
+
+            <!-- ================= AI RESULT ================= -->
+
             <article class="card ai-card">
+
                 <div class="card-title-row">
-                    <div class="eyebrow">04 · AI ANALYSIS</div>
-                    <div id="aiBadge" class="badge neutral">WAITING</div>
+
+                    <div class="eyebrow">
+                        04 · AI ANALYSIS
+                    </div>
+
+                    <div
+                        id="aiBadge"
+                        class="badge neutral"
+                    >
+                        WAITING
+                    </div>
+
                 </div>
 
-                <div id="aiWaiting" class="ai-waiting">
-                    <div class="ai-icon">AI</div>
-                    <h3>Awaiting Image</h3>
-                    <p>Upload a satellite image and click Analyze Cyclone.</p>
+
+                <!-- WAITING -->
+
+                <div
+                    id="aiWaiting"
+                    class="ai-waiting"
+                >
+
+                    <div class="ai-icon">
+                        AI
+                    </div>
+
+                    <h3>
+                        Awaiting Image
+                    </h3>
+
+                    <p>
+                        Upload a satellite image and click
+                        Analyze Cyclone.
+                    </p>
+
                 </div>
 
-                <div id="aiResult" class="hidden">
-                    <div class="probability-label">CYCLONE PROBABILITY</div>
-                    <div id="probability" class="probability">0.00%</div>
+
+                <!-- RESULT -->
+
+                <div
+                    id="aiResult"
+                    class="hidden"
+                >
+
+                    <div class="probability-label">
+                        CYCLONE PROBABILITY
+                    </div>
+
+
+                    <div
+                        id="probability"
+                        class="probability"
+                    >
+                        0.00%
+                    </div>
+
 
                     <div class="progress">
-                        <div id="progressBar"></div>
+
+                        <div
+                            id="progressBar"
+                            style="width: 0%;"
+                        ></div>
+
                     </div>
 
-                    <div id="detectionBox" class="detection">
-                        <div id="detectionDot" class="detection-dot"></div>
+
+                    <div
+                        id="detectionBox"
+                        class="detection"
+                    >
+
+                        <div
+                            id="detectionDot"
+                            class="detection-dot"
+                        ></div>
+
+
                         <div>
-                            <strong id="detectionText">ANALYZING</strong>
-                            <span id="confidenceText">Please wait</span>
+
+                            <strong id="detectionText">
+                                ANALYZING
+                            </strong>
+
+                            <span id="confidenceText">
+                                Please wait
+                            </span>
+
                         </div>
+
                     </div>
+
 
                     <div class="result-details">
+
                         <div>
-                            <span>MODEL</span>
-                            <strong id="modelName">MobileNetV2</strong>
+
+                            <span>
+                                THRESHOLD
+                            </span>
+
+                            <strong>
+                                70%
+                            </strong>
+
                         </div>
-                        <div>
-                            <span>THRESHOLD</span>
-                            <strong>50%</strong>
-                        </div>
+
                     </div>
 
-                    <div id="modelWarning" class="model-warning"></div>
+
+                    <div
+                        id="modelWarning"
+                        class="model-warning"
+                    ></div>
+
                 </div>
+
             </article>
 
         </section>
 
-        <!-- FORECAST / RISK -->
+
+
+        <!-- ================= FORECAST + SAFETY ================= -->
+
         <section class="lower-grid">
 
-            <article class="card forecast-card">
-                <div class="eyebrow">05 · FORECAST</div>
-                <h2>Forecast Positions</h2>
 
-                <div id="forecastList" class="forecast-list">
-                    <div class="empty-state">No forecast points loaded.</div>
+            <!-- FORECAST -->
+
+            <article class="card forecast-card">
+
+                <div class="eyebrow">
+                    05 · FORECAST
                 </div>
+
+                <h2>
+                    Forecast Positions
+                </h2>
+
+
+                <div
+                    id="forecastList"
+                    class="forecast-list"
+                >
+
+                    <div class="empty-state">
+                        No forecast points loaded.
+                    </div>
+
+                </div>
+
             </article>
 
+
+
+            <!-- SAFETY -->
+
             <article class="card risk-card">
-                <div class="eyebrow">06 · SAFETY INTELLIGENCE</div>
-                <h2>AI Safety Guide</h2>
+
+                <div class="eyebrow">
+                    06 · SAFETY INTELLIGENCE
+                </div>
+
+                <h2>
+                    AI Safety Guide
+                </h2>
+
 
                 <div class="safety-list">
+
+
                     <div>
+
                         <b>01</b>
-                        <span>Follow official meteorological warnings.</span>
+
+                        <span>
+                            Follow official meteorological warnings.
+                        </span>
+
                     </div>
+
+
                     <div>
+
                         <b>02</b>
-                        <span>Stay indoors and away from windows during severe conditions.</span>
+
+                        <span>
+                            Stay indoors and away from windows
+                            during severe conditions.
+                        </span>
+
                     </div>
+
+
                     <div>
+
                         <b>03</b>
-                        <span>Do not use this prototype model as an official emergency warning.</span>
+
+                        <span>
+                            Do not use this prototype as an
+                            official emergency warning.
+                        </span>
+
                     </div>
+
                 </div>
+
             </article>
 
         </section>
 
+
+
+        <!-- ================= FOOTER ================= -->
+
         <footer>
-            <span>VARSHA AI</span>
-            <span>AI-POWERED CYCLONE INTELLIGENCE</span>
+
+            <span>
+                VARSHA AI
+            </span>
+
+            <span>
+                AI-POWERED CYCLONE INTELLIGENCE
+            </span>
+
         </footer>
 
     </main>
+
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- ================= LEAFLET ================= -->
+
+<script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    crossorigin=""
+></script>
+
+
+<!-- ================= APP JS ================= -->
 
 <script src="app.js"></script>
+
 </body>
 </html>
